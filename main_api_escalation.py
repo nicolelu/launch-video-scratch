@@ -2,6 +2,7 @@ import random
 from datetime import datetime, timedelta
 import requests
 import sqlite3
+import logging
 
 if __name__ == "__main__":
     BASE_URL = "https://api.example.com"  # Stylized placeholder
@@ -52,7 +53,7 @@ if __name__ == "__main__":
                     confidence = sorted_dates[1][1] / total_weight
                     details += ' | Fallback to 2nd highest weight.'
         if consensus_date is not None and confidence >= 0.7:
-            print(f"[{symbol}] Finalized earnings date: {consensus_date.strftime('%Y-%m-%d')} (confidence: {confidence:.2f})")
+            print(f"[{symbol}] Finalized quarter end date: {consensus_date.strftime('%Y-%m-%d')} (confidence: {confidence:.2f})")
             print(f"Details: {details}")
         else:
             # Batch API escalation to sieve
@@ -73,7 +74,7 @@ if __name__ == "__main__":
                 print(f"Batch job submission failed: HTTP {batch_response.status_code}")
 
             # Retrieve data from callback URL and insert into production SQL DB
-            callback_url = "https://etl.purplebouldercap.com/api/callback/earnings-date"
+            callback_url = "https://etl.purplebouldercap.com/api/callback/quarter-end-date"
             print(f"Retrieving batch results from callback URL: {callback_url}")
             response = requests.get(callback_url)
             if response.status_code == 200:
@@ -82,7 +83,7 @@ if __name__ == "__main__":
                 conn = sqlite3.connect("prod_etl.db")
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS earnings_dates (
+                    CREATE TABLE IF NOT EXISTS quarter_end_dates (
                         symbol TEXT PRIMARY KEY,
                         final_date TEXT,
                         confidence REAL
@@ -90,17 +91,17 @@ if __name__ == "__main__":
                 """)
                 for s, result in api_result["results"].items():
                     cursor.execute(
-                        "REPLACE INTO earnings_dates (symbol, final_date, confidence) VALUES (?, ?, ?)",
+                        "REPLACE INTO quarter_end_dates (symbol, final_date, confidence) VALUES (?, ?, ?)",
                         (s, result["final_date"], result["confidence"])
                     )
                 conn.commit()
                 print("DB updated with callback results.")
                 # Continue ETL as if DB was updated
-                cursor.execute("SELECT final_date, confidence FROM earnings_dates WHERE symbol=?", (symbol,))
+                cursor.execute("SELECT final_date, confidence FROM quarter_end_dates WHERE symbol=?", (symbol,))
                 row = cursor.fetchone()
                 if row:
                     final_date, confidence = row
-                    print(f"[{symbol}] DB-filled earnings date: {final_date} (confidence: {confidence})")
+                    print(f"[{symbol}] DB-filled quarter end date: {final_date} (confidence: {confidence})")
                 else:
                     print(f"[{symbol}] No data in DB after callback.")
                 conn.close()

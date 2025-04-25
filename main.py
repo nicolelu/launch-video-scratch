@@ -63,9 +63,9 @@ if __name__ == "__main__":
                     details += ' | Fallback to 2nd highest weight.'
         # Output or escalate
         if consensus_date is not None and confidence >= 0.7:
-            print(f"[{symbol}] Finalized earnings date: {consensus_date.strftime('%Y-%m-%d')} (confidence: {confidence:.2f})")
+            print(f"[{symbol}] Finalized quarter end date: {consensus_date.strftime('%Y-%m-%d')} (confidence: {confidence:.2f})")
             print(f"Details: {details}")
         else:
-            subject = f"[ACTION REQUIRED] Low-confidence earnings date for {symbol}"
-            body = f"Earnings date arbitration yielded low confidence.\n\nRaw data: {feed_results}\n\nDetails: {details}\nConfidence: {confidence:.2f}\n\nPlease fix this data and manually restart ETL process after completed."
+            subject = f"[ACTION REQUIRED] Low-confidence quarter end date for {symbol}"
+            body = f"Quarter end date arbitration yielded low confidence.\n\nRaw data: {feed_results}\n\nDetails: {details}\nConfidence: {confidence:.2f}\n\nPlease fix this data and manually restart ETL process after completed."
             send_email(DATA_ENGINEERS, subject, body)
